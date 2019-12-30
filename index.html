@@ -1,0 +1,549 @@
+
+<article id="app">
+	<a class="go-home indic" href="http://sur-drupal/drupal/" target="_blank"><button title="Go Home" class="indic"> <i class="fas fa-home"></i> </button></a>
+	<button @click="showint=!showint" class="user indic"><i class="fas fa-users-cog"></i> </button>
+	
+	<button class="user indic" title="Number Change" @click="shownum=!shownum"> <i class="fas fa-phone-alt"></i> <i class="fas fa-exchange-alt"></i></button>
+	<button class="headsets user indic" title="Lab headsets" @click="showheadsets=true"> <i class="fas fa-headphones-alt"></i></button>
+	<app-main></app-main>
+	<app-interviewer v-show="showint" @mouseleave="showint=false" @close-app="closeInt"></app-interviewer>
+	<app-numchange v-show="shownum"  @close-app="closeNum"></app-numchange>
+	<app-navigation></app-navigation>
+	<app-headsets v-show="showheadsets" @close-app="closeHeadsets"></app-headsets>
+</article>
+<script type="text/x-template" id="app-headsets-template">
+<article class="headsets-page">
+	<button class="exit" @click="closeApp"> <i class="fas fa-door-open"></i></button>
+	<h2> Lab Headsets <sup>({{headsets.length}})</sup> </h2>
+	<section class="headsets-contain">
+		<div class="each-headset" v-for="hs in headsets"> 
+			<img :src="hs.pic">
+			<a :href="hs.link" target="_blank" title="Click to open the manual for this headset"> {{hs.name}}</a>
+			</div>
+		</section>
+	</article>
+</script>
+<script type="text/x-template" id="interviewer-template">
+<article class="interviewer-page">
+	<header>
+	<button class="exit" @click="closeApp"><i class="fas fa-sign-out-alt"></i></button>
+	<h2> Coding Guide & Interviewing Assistance (CGIA)</h2>
+		<hr>
+	<h3> {{today.toDateString()}}</h3>
+		</header>
+	
+	<section class="logging-in" v-show="loggedin==false">
+		
+		<input type="text" placeholder="Enter your name" v-model="you.name">
+	<label for="mySurveys">Select a Survey:
+		
+		<select id="surveys"   id="mySurveys" v-model="you.survey">
+			
+			<option v-for="survey in activeSurveys" :value="survey"> {{survey.name}} </option>
+	</select></label>
+		
+		<button @click="loggedin=true">Submit</button>
+			
+		
+	</section>
+	<section class="logged-in" v-show="loggedin==true">
+		<h2> Hi {{you.name}} <sup><button class="exit-btn" title="Reset" @click="loggedin=false"><i class="fas fa-user-times"></i></button></sup></h2>
+		<int-survey :survey="intSurvey" :lvm="leaveMsg" :name="you.name"></int-survey>
+		
+	</section>
+	</article>
+</script>
+<script type="text/x-template" id="int-survey-template">
+<article class="int-survey-area">
+	<p> It looks like you're dialing on {{survey.name}} today</p>
+	<div class="surv-info">
+		<p class="bullet"> <b>Sample Type</b>{{survey.sampletype}}  </p>
+		<p class="bullet" title="do not schedule callbacks after this date unless instructed otherwise by a supervisor"><b>Survey Deadline</b>{{survey.dateend}} </p>
+		<a :href="survey.tipsheet" target="_blank">Tipsheet </a>
+	</div>
+	<div class="dropdown">
+		<i class="fas fa-info-circle"></i> <span> {{lvm}}</span>
+		<div class="hidden">
+		<p> If you are leaving voice messages, please be reminded that you must leave messages on all first attempts and every 7 days thereafter. </p>
+	<p>(e.g. if a record was called on {{lvm}} or prior and a message hasn't been left and/or coded as a Soft Refusal since then you must leave a voice message. )</p>
+	</div>
+	</div>
+	
+		
+	<section v-if="survey.voicemail" class="vm-sec">
+		<div v-if="survey.voicemail.leave==true">
+		<h3 >English Voicemail Script </h3>
+		<p v-if="survey.voicemail.message"> {{survey.voicemail.message}}</p>
+			<h3 v-if="survey.voicemail.spMsg"> Spanish Voicemail Script</h3>
+		<p v-if="survey.voicemail.spMsg"> {{survey.voicemail.spMsg}}</p>
+			</div>
+		<p v-else>You are not required to leave voice messages on this survey </p>
+		
+	</section>
+	<div v-if="survey.voicemail.leave==true" class="attmsg-sec">
+			<label for="myAttMsg" title="Click below to copy the attempt message and paste it into the attempt message for your current record"> Attempt Message: </label>
+			<textarea ref="amsg" id="myAttMsg" @click="copyContents">{{attemptMsg}}</textarea>
+	</div>
+	</article>
+</script>
+<script type="text/x-template" id="landing-page-template">
+<article class="landing-page">
+	<section class="page-top">
+		<h1> Welcome to {{header.title}} (CGIA)</h1>
+		<p> {{header.subject}}</p>
+	</section>
+	<section class="page-bottom">
+		
+	</section>
+	</article>
+</script>
+<script type="text/x-template" id="main-dispos-template">
+<article class="conpage dispos">
+	<section class="bod-key">
+		<article class="akey"> <i class="fas fa-phone-square-alt"></i> <div class="hidden">Callback Disposition</div> </article>
+		<article class="akey"> <i class="fas fa-random"></i><div class="hidden">RDD Sample Survey Disposition</div> </article>
+		<article class="akey"> <i class="far fa-list-alt"></i> <div class="hidden">Listed Sample Survey Disposition </div></article>
+		<article class="akey"> <i class="fas fa-asterisk"></i><div class="hidden"> Survey Specific Disposition</div> </article>
+		<div :class="showbar==true?'search-area big': 'search-area'" >
+				<nav>
+				<button v-for="btn in searchcrit" :title="'click to search by ' +  btn.name +  '. Double click to reset.'":class="currentsearchcrit==btn?'search-crit current':'search-crit'" @click="currentsearchcrit=btn" @dblclick="searchterm=''" @dblclick="currentsearchcrit=null">Search by {{btn.name}}</button>
+					<p class="results" v-show="showbar"> {{searchResults.length}} results </p>
+	</nav>
+			<input type="search" list="dispos"  v-model="searchterm" class="search-box"  @blur="showbar=false">
+		
+			<datalist id="dispos">
+				<option v-for="result in searchResults"  @click="passdisp=result" @click="showdispo=true">
+					<h2>{{result.name}} ({{result.id}})</h2>
+					<p>{{result.subject}}</p>
+					</option>
+	</datalist>
+			<article class="search-results" v-show="showbar">
+				<nav>
+				<button v-for="btn in searchcrit" :title="'click to search by ' +  btn.name +  '. Double click to reset.'":class="currentsearchcrit==btn?'search-crit current':'search-crit'" @click="currentsearchcrit=btn" @dblclick="currentsearchcrit=null">Search by {{btn.name}}</button>
+					<p class="results"> {{searchResults.length}} results </p>
+	</nav>
+				
+				<div class="each-result" v-for="result in searchResults" @click="passdisp=result" @click="showdispo=true" @click="showbar=false"> 
+					<h4> {{result.name}} ({{result.id}})</h4>
+	</div>
+	</article>
+			
+	</div>
+	</section>
+	<section class="bod-sec">
+		<h2> Non-Final Dispositions <sup>({{nfinalDispos.length}})</sup></h2>
+		<ul>
+		<a v-for="dispo in nfinalDispos" @click="changeDispo(dispo)">{{dispo.name}} ({{dispo.id}})
+			<sup>
+			<span v-if="dispo.isSurveySpecific"> <i class="fas fa-asterisk"></i></span>
+	<span v-if="dispo.iscb==true"> <i class="fas fa-phone-square-alt"></i></span>
+			<span v-if="dispo.sampletype.includes('RDD')"><i class="fas fa-random"></i></span>
+			<span v-if="dispo.sampletype.includes('Listed')"><i class="far fa-list-alt"></i></span>
+				</sup>
+	</a>
+			</ul>
+	</section>
+	<section class="bod-sec">
+		<h2> Final Dispositions <sup>({{finalDispos.length}})</sup></h2>
+		<ul>
+		<a v-for="dispo in finalDispos" @click="changeDispo(dispo)" > {{dispo.name}} ({{dispo.id}}) 
+			<sup>
+			<span v-if="dispo.isSurveySpecific"> <i class="fas fa-asterisk"></i></span>
+			<span v-if="dispo.iscb==true"> <i class="fas fa-phone-square-alt"></i></span>
+			<span v-if="dispo.sampletype.includes('RDD')"><i class="fas fa-random"></i></span>
+			<span v-if="dispo.sampletype.includes('Listed')"><i class="far fa-list-alt"></i></span>
+				</sup>
+	</a>
+			</ul>
+		<article class="dispo-modal" v-show="showdispo" @keyup.esc="showdispo=false">
+		<button class="closebtn" @click="showdispo=false"> <i class="fas fa-times-circle"></i></button> 
+			<app-dispoview :dispo="passdisp" :ft="firsttab"></app-dispoview>
+	</article>
+		
+	</section>
+	</article>
+</script>
+<script type="text/x-template" id="dispoview-template">
+<article class="dispoview-page">
+	<section class="dispo-header">
+			<h1> {{dispo.name}} ({{dispo.id}}) 
+	<sup>
+			<span v-if="dispo.isSurveySpecific"> <i class="fas fa-asterisk"></i></span>
+	<span v-if="dispo.iscb==true"> <i class="fas fa-phone-square-alt"></i></span>
+			<span v-if="dispo.sampletype.includes('RDD')"><i class="fas fa-random"></i></span>
+			<span v-if="dispo.sampletype.includes('Listed')"><i class="far fa-list-alt"></i></span>
+				</sup>
+	</h1>
+	<p class="subj" v-if="dispo.subject"> {{dispo.subject}}</p>
+		<div class="surv-spec" v-if="dispo.isSurveySpecific==true">
+			<p title="This disposition is survey specific. This diposition should only be used on the following surveys"> <b>Applicable Surveys: </b>{{dispo.surveys.join(', ')}} </p>
+			
+	</div>
+	</section>
+
+	<dispotab :dispo="dispo"></dispotab>
+	</article>
+</script>
+<script type="text/x-template" id="dispotab-template">
+<article class="dispo-tab">
+		
+		<section class="tabcontent">
+			<article class="content-stuff" v-show="inview===dispo.examples">
+				<section class="stuff-links">
+					<a :class="currenttab==link?'stuff-link current': 'stuff-link'" v-for="(link, index) in dispo.examples" @click="currenttab=link">
+						<span class="loccirc"></span>
+						{{link.title? link.title: "General"}}</a>
+					
+	</section>
+				<transition name='flash' mode="out-in">
+				<section class="stuff-contents"  :key="currenttab">
+					<article class="each-content" v-show="currenttab==link" v-for="link in dispo.examples">
+						<div class="pot-dup" v-if="typeof link.points[0] ==='object'" v-for="qwe in link.points">
+							<h4> {{qwe.header}}</h4>
+							<ul>
+							<li v-for="il in qwe.subpoints">{{il}}</li>
+								</ul>
+							<hr>
+							</div>
+						<ul v-if="typeof link.points[0] ==='string'">
+							
+							
+						<li  v-for="point in link.points"> {{point}}</li>
+								
+						</ul>
+	</article>
+					
+	</section>
+				</transition>
+	</article>
+			<article class="content-stuff" v-show="inview===dispo.intNotes">
+				<section class="stuff-links">
+					<a :class="currenttab==link?'stuff-link current': 'stuff-link'" v-for="(link, index) in dispo.intNotes" @click="currenttab=link">
+						<span class="loccirc"></span>
+						{{link.notetitle? link.notetitle: "General"}}</a>
+					
+	</section>
+				<transition name='flash' mode="out-in">
+				<section class="stuff-contents"  :key="currenttab">
+					<article class="each-content" v-show="currenttab==link" v-for="link in dispo.intNotes">
+						
+						<ul v-if="typeof link.notepoints[0] ==='string'">
+							
+							
+						<li  v-for="point in link.notepoints"> {{point}}</li>
+								
+						</ul>
+	</article>
+					
+	</section>
+				</transition>
+	</article>
+			<article class="content-stuff" v-show="inview===dispo.opMsg">
+				<section class="stuff-links">
+					<a :class="currenttab==link?'stuff-link current': 'stuff-link'" v-for="(link, index) in dispo.opMsg" @click="currenttab=link">
+						<span class="loccirc"></span>
+						{{link.title? link.title: "General"}}</a>
+					
+	</section>
+				<transition name='flash' mode="out-in">
+				<section class="stuff-contents"  :key="currenttab">
+					<article class="each-content" v-show="currenttab==link" v-for="link in dispo.opMsg">
+						
+						<ul >
+							
+							
+						<li  v-for="point in link.points"><q> {{point}}</q></li>
+								
+						</ul>
+	</article>
+					
+	</section>
+				</transition>
+	</article>
+			<article class="content-stuff" v-show="inview===dispo.audios">
+				<section class="stuff-links">
+					<a :class="currenttab==link?'stuff-link current': 'stuff-link'" v-for="(link, index) in dispo.audios" @click="currenttab=link">
+						<span class="loccirc"></span>
+						{{link.audiotitle? link.audiotitle: "General"}}</a>
+					
+	</section>
+				<transition name='flash' mode="out-in">
+				<section class="stuff-contents"  :key="currenttab">
+					<article class="each-content" v-show="currenttab==link" v-for="link in dispo.audios">
+						
+						<audio controls loop >
+							<source :src="link.audiolink" type="audio/mp3">
+							</audio>
+						</ul>
+	</article>
+					
+	</section>
+				</transition>
+	</article>
+	</section>
+	<section class="tablinks">
+			<button v-if="dispo.examples" :class="inview==dispo.examples?'tablink current': 'tablink'" @click="changeExmplStuff(dispo.examples)"><i class="fas fa-pencil-ruler"></i> Examples </button>
+			<button v-if="dispo.opMsg" 
+							:class="inview==dispo.opMsg?'tablink current': 'tablink'"
+							@click="inview=dispo.opMsg"> <i class="fas fa-record-vinyl"></i>Operator Messages </button>
+		<button v-if="dispo.intNotes" :class="inview==dispo.intNotes?'tablink current': 'tablink'"
+							@click="inview=dispo.intNotes"><i class="fas fa-exclamation-circle"></i> Interviewer Notes </button>
+		<button v-if="dispo.audios" :class="inview==dispo.audios?'tablink current': 'tablink'"
+							@click="inview=dispo.audios"><i class="fas fa-play-circle"></i> Audios </button>
+	</section>
+	</article>
+</script>
+<script type="text/x-template" id="nav-page-template">
+<article class="nav-page">
+	<nav>
+<router-link v-for="link in body" :to="link.path" class="nav-link"> {{link.name}}</router-link>
+	</nav>
+<router-view></router-view>
+</article>
+</script>
+<script type="text/x-template" id="basicthings-template">
+  <article class="conpage"> 
+<section class="bod-sec-tab">
+    <section class="tablinks" v-if="currentlink==null">
+        <a v-for="link in body.content" @click="currentlink=link" :class="currentlink==link?'tablink current': 'tablink'"> {{link.name}}</a>
+    </section>
+    <section class="tabcontents" v-else>
+			<button class="closebtn" @click="currentlink=null">close</button>
+        <article class="link-content" v-show="currentlink==link" v-for="link in body.content">
+            <h3> {{link.name}}</h3>
+            <p class="subj">{{link.subject}} </p>
+            <article class="content-tab" v-if="link.bullets">
+                <section class="content-tablinks" v-for="sub in link.bullets">
+                    <a  @click="currentsub=sub" @dblclick="currentsub=null" :class="currentsub==sub?'sublink current': 'sublink'"> {{sub.bhead? sub.bhead: 'General'}} <span class="direc-arrow"> <i class="fas fa-chevron-circle-down"></i></span></a>
+									<ul class="each-tab"  v-show="currentsub==sub">
+										<p v-for="point in sub.points"> {{point}}</p>					
+	</ul>
+                </section>
+                <section class="content-tab-body">
+									
+	</section>
+            </article>
+        </article>
+    </section>
+    
+    </section>
+</article>
+</script>
+<script type="text/x-template" id="survey-sections-template">
+<article class="conpage survsec">
+	<section class="sectionlinks">
+		<article v-for="link in body.content" @click="currentsec=link" :class="currentsec==link?'section-link current':'section-link'" >
+			<section class="top-part">
+			<center>	<img :src="link.pic"></center>
+	</section>
+			<section class="low-part">
+				<h2>{{link.name}}</h2>
+				
+	</section>
+			</article>
+	</section>
+	<section class="sectionbodies">
+		<article v-for="link in body.content" v-show="currentsec==link" class="each-section" :style="{ background: 'url('+link.pic+'), rgba(0,0,0,0.9)' }">
+			<section class="pic-hold">
+			<p v-for="txt in link.text"> {{txt}}</p>
+				</section>
+			<div class="survey-text">
+				
+				</div>
+	</article>
+	</section>
+	
+	</article>
+</script>
+<script type="text/x-template" id="short-ref-template">
+<article class="conpage shortref">
+	<section class="ref-head">
+		<div class="points">
+			<h2> Short Reference Guide </h2>
+			<transition name="flash" mode="out-in">
+			<small :key="points.current"> {{points.content[points.current]}} </small>
+				</transition>
+	</div>
+		<div class="search-area">
+			<input type="text" v-model="searchterm" placeholder="Search Shorthand Reference" @focus="showresults=true" @blur="showresults=false">
+			<section class="search-results" v-show="showresults">
+				<article class="each-result" v-for="result in searchResults" >
+					<p><b>{{result.short}} -</b><small> {{result.meaning}}</small></h4>
+	</article>
+	</section>
+	</div>
+	</section>
+	<section class="ref-body">
+		<div v-for="ref in body.content" :class="currentref==ref?'each-ref current': 'each-ref'" @mouseover="currentref=ref" @mouseleave="currentref=null">
+			<section class="inner">
+				<div class="front">
+					<h4> {{ref.short}}</h4>
+	</div>
+				<div class="back">
+					<p > {{ref.meaning}}</p>
+	</div>
+	</section>
+			
+			
+		
+	</section>
+	</article>
+</script>
+<script type="text/x-template" id="wcissues-template">
+<article class="conpage wcissues"> 
+<h2>	
+	
+	{{title}}
+	<span  v-if="currentissue!==null"> - {{currentissue.name}}</span>
+	</h2>
+<article class="issues-tab">
+	
+    <section class="tablinks"  key="currentissue">
+        <div v-for="issue in body" @click="currentissue=issue" :class="currentissue==issue?'tablink current': 'tablink'"> 
+        <p> {{issue.name}}</p>
+        </div>
+    </section>
+		
+   
+        <article class="each-body" v-for="issue in body" v-show="currentissue==issue" :key="currentissue">
+					
+           <center> <img :src="issue.pic"></center>
+            <p class="subject">{{issue.subject}}</p>
+            <h3>Steps to Resolve the Issue</h3>
+            <ol>
+                <li v-for="step in issue.steps"> {{step}}</li>
+            </ol>
+        </article>
+    
+</article>
+</article>
+</script>
+<script type="text/x-template" id="dialing-guide-template">
+<article class="conpage">
+	<article class="dialguide-page">
+		<section class="tablinks">
+			<a v-for="guide in body" @click="currentguide=guide" :class="currentguide==guide?'tablink current':'tablink'">{{guide.name}}</a>
+	</section>
+		<section class="tabcontents">
+			<article v-for="guide in body" v-show="currentguide==guide" class="each-guide" :key="currentguide">
+				<h2> {{guide.name}}</h2>
+				<p class="subj" v-if="guide.subject">{{guide.subject}}</p>
+				<ul>
+				<article v-for="part in guide.parts" :class="currentpart==part?'collapsi open':'collapsi'">
+					<h3 @click="currentpart=part">{{part.title}} 
+						<a class="part-link" v-if="part.link" :href="part.link"><i class="fas fa-external-link-alt" target="_blank"></i></a>
+						<button class="arrow"><i class="fas fa-chevron-circle-down"></i></button>
+	</h3>
+					<transition name="flash" mode="out-in">
+					<p v-if="part.info" v-show="currentpart==part">{{part.info}}</p>
+						</transition>
+					<transition name="flash" mode="out-in">
+					<ul v-show="currentpart==part" key="currentpart">
+						<li v-for="link in part.steps">{{link}}</li>
+						</ul>
+						</transition>
+					<section class="step-pics" v-if="part.pics" v-show="currentpart==part" key="currentpart">
+						<figure class="each-step-pic" v-for="item in part.pics">
+							<img :src="item.pic">
+							<figcaption>{{item.name}}</figcaption>
+							</figure>
+	</section>
+	</article>
+					</ul>
+	</article>
+	</section>
+	</article>
+	</article>
+</script>
+<script type="text/x-template" id="coding-guide-template">
+<article class="conpage codingguide">
+	<transition name="flash" mode="out-in">
+	<article class="guide-select" >
+		<article v-for="guide in body" @click="currentguide=guide" @click="currentpart=currentguide.instr[0]" :class="currentguide==guide?'each-guide current':'each-guide'">
+			<h1>{{guide.title}}</h1>
+	</article>
+	</article>
+		</transition>
+	<article class="guide-contents">
+		<article v-for="guide in body" v-show="currentguide==guide" class="guide-body">
+			
+			<h1> {{guide.title}}</h1>
+			<p v-if="guide.subject">{{guide.subject}}</p>
+			<section class="part-select">
+				<transition-group name="flash" mode="out-in">
+				<article class="each-part" v-for="part in guide.instr" :key="currentpart">
+					<section class="topsec">
+						<img :src="part.pic">
+	</section>
+					<section class="lowsec">
+						<p> {{part.text}}</p>
+	</section>
+					
+					
+	</article>
+					</transition-group>
+	</section>
+		
+	</article>
+	</article>
+	</article>
+</script>
+<script type="text/x-template" id="number-change-template">
+ <article class="numchange-page"> 
+<header>
+	<button class="exit" @click="closeApp"><i class="fas fa-sign-out-alt"></i></button>
+	<h1> Number Changes</h1>
+	</header>
+
+	
+	 <section class="sub-nums">
+		 <transition name="flash" mode="out-in">
+		 <p v-if="numchanges.length>0" :key="numchanges.length" class="how-many"> {{numchanges.length}} number changes</p>
+			 </transition>
+		 <section class="cards-contain none" v-show="numchanges.length==0">
+			 <p> No Current Number Changes </p>
+	</section>
+		 <section class="cards-contain" v-show="numchanges.length>0">
+			 <transition-group name="flash">
+		<div class="num-card" v-for="num in numchanges" key="numchanges">
+			<h2> {{num.survey}} #{{num.recnum}}</h2>
+			<div class="num-cont">
+				<p><b>Old Number:</b> {{num.onum}}</p>
+				<p><b>New Number:</b>{{num.newnum}}</p>
+	</div>
+			<p><b>Notes:</b>{{num.notes}}</p>
+			</div>
+				 </transition-group>
+			 </section>
+	</section>
+	 	 <section class="rside">
+		  <app-submitnumchanges inline-template @add-num="addNum">
+<section class="new-num">
+	<h2> New Number Form </h2>
+    <label for="mySurv" >Survey Name </label>
+	<input type="text" id="mySurv" list="surveys" ref="mySurv" >
+   <datalist id="surveys">
+		 <option v-for="surv in activeSurveys" :value="surv.name">
+		 </datalist>
+    <label for="myRecNum"> Record Number</label>
+    <input type="text" id="myRecNum" ref="myRecNum" >
+    <label for="myOnum"> Old Number</label>
+    <input type="tel" id="myOnum" ref="myOnum" >
+    <label for="myNewNum"> New Number </label>
+    <input type="tel" id="myNewNum" ref="myNewNum" >
+    <label for="myNotes"> Notes</label>
+    <textarea id="myNotes" ref="myNotes" > </textarea>
+    <button @click="submitNum" > Done</button>
+</section>
+		 </app-submitnumchanges>
+	<a href="google.com" target="_blank"> Number Change Form </a>
+			 <div class="intro-text">
+		<transition name="flash" mode="out-in">
+		<p :key="currentpoint">{{intropoints[currentpoint]}}</p>
+			</transition>
+	</div>
+			 <p class="card-select"> <input type="radio" name="myPoint" v-model="currentpoint" v-for="(point, index) in intropoints" :value="index"></p>
+	</section>
+		
+</article> 
+</script>
